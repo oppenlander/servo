@@ -14,7 +14,7 @@ use time::precise_time_ns;
 use msg::constellation_msg::PipelineId;
 use actor::{Actor, ActorRegistry};
 use actors::timeline::HighResolutionStamp;
-use devtools_traits::{ChromeToDevtoolsControlMsg, DevtoolsControlMsg, DevtoolScriptControlMsg};
+use devtools_traits::{ChromeToDevtoolsControlMsg, DevtoolsControlMsg, DevtoolScriptControlMsg, MsgStatus};
 
 pub struct FramerateActor {
     name: String,
@@ -36,8 +36,8 @@ impl Actor for FramerateActor {
                       _registry: &ActorRegistry,
                       _msg_type: &str,
                       _msg: &json::Object,
-                      _stream: &mut TcpStream) -> Result<bool, ()> {
-        Ok(false)
+                      _stream: &mut TcpStream) -> Result<MsgStatus, ()> {
+        Ok(MsgStatus::Ignored)
     }
 }
 

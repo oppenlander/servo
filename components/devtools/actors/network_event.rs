@@ -9,6 +9,8 @@
 extern crate hyper;
 
 use actor::{Actor, ActorRegistry};
+use devtools_traits::MsgStatus;
+use devtools_traits::MsgStatus::{Processed, Ignored};
 use protocol::JsonPacketStream;
 use rustc_serialize::json;
 use std::net::TcpStream;
@@ -74,7 +76,7 @@ impl Actor for NetworkEventActor {
                       _registry: &ActorRegistry,
                       msg_type: &str,
                       _msg: &json::Object,
-                      stream: &mut TcpStream) -> Result<bool, ()> {
+                      stream: &mut TcpStream) -> Result<MsgStatus, ()> {
         Ok(match msg_type {
             "getRequestHeaders" => {
                 // TODO: Pass the correct values for headers, headerSize, rawHeaders
@@ -85,24 +87,24 @@ impl Actor for NetworkEventActor {
                     rawHeaders: "Raw headers".to_string(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
             "getRequestCookies" => {
-                false
+                Ignored
             }
             "getRequestPostData" => {
-                false
+                Ignored
             }
             "getResponseHeaders" => {
-                false
+                Ignored
             }
             "getResponseCookies" => {
-                false
+                Ignored
             }
             "getResponseContent" => {
-                false
+                Ignored
             }
-            _ => false
+            _ => Ignored
         })
     }
 }

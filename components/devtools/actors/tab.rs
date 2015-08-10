@@ -10,6 +10,8 @@
 use actor::{Actor, ActorRegistry};
 use actors::console::ConsoleActor;
 use devtools_traits::DevtoolScriptControlMsg::WantsLiveNotifications;
+use devtools_traits::MsgStatus;
+use devtools_traits::MsgStatus::{Processed, Ignored};
 use protocol::JsonPacketStream;
 
 use rustc_serialize::json;
@@ -82,11 +84,11 @@ impl Actor for TabActor {
                       registry: &ActorRegistry,
                       msg_type: &str,
                       _msg: &json::Object,
-                      stream: &mut TcpStream) -> Result<bool, ()> {
+                      stream: &mut TcpStream) -> Result<MsgStatus, ()> {
         Ok(match msg_type {
             "reconfigure" => {
                 stream.write_json_packet(&ReconfigureReply { from: self.name() });
-                true
+                Processed
             }
 
             // https://wiki.mozilla.org/Remote_Debugging_Protocol#Listing_Browser_Tabs
@@ -105,7 +107,7 @@ impl Actor for TabActor {
                 stream.write_json_packet(&msg);
                 console_actor.script_chan.send(
                     WantsLiveNotifications(console_actor.pipeline, true)).unwrap();
-                true
+                Processed
             }
 
             //FIXME: The current implementation won't work for multiple connections. Need to ensure 105
@@ -120,7 +122,7 @@ impl Actor for TabActor {
                 stream.write_json_packet(&msg);
                 console_actor.script_chan.send(
                     WantsLiveNotifications(console_actor.pipeline, false)).unwrap();
-                true
+                Processed
             }
 
             "listFrames" => {
@@ -129,10 +131,10 @@ impl Actor for TabActor {
                     frames: vec!(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
-            _ => false
+            _ => Ignored
         })
     }
 }

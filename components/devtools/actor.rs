@@ -4,7 +4,7 @@
 
 /// General actor system infrastructure.
 
-use devtools_traits::PreciseTime;
+use devtools_traits::{PreciseTime, MsgStatus};
 use rustc_serialize::json;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
@@ -23,7 +23,7 @@ pub trait Actor: Any {
                       registry: &ActorRegistry,
                       msg_type: &str,
                       msg: &json::Object,
-                      stream: &mut TcpStream) -> Result<bool, ()>;
+                      stream: &mut TcpStream) -> Result<MsgStatus, ()>;
     fn name(&self) -> String;
 }
 
@@ -185,16 +185,19 @@ impl ActorRegistry {
     pub fn handle_message(&mut self,
                           msg: &json::Object,
                           stream: &mut TcpStream)
-                          -> Result<(), ()> {
+                          -> Result<MsgStatus, ()> {
         let to = msg.get("to").unwrap().as_string().unwrap();
 
         match self.actors.get(&to.to_string()) {
             None => println!("message received for unknown actor \"{}\"", to),
             Some(actor) => {
                 let msg_type = msg.get("type").unwrap().as_string().unwrap();
-                if !try!(actor.handle_message(self, &msg_type.to_string(), msg, stream)) {
-                    println!("unexpected message type \"{}\" found for actor \"{}\"",
-                             msg_type, to);
+                match !try!(actor.handle_message(self, &msg_type.to_string(), msg, stream)) {
+                    MsgStatus::Ignored => {
+                        println!("unexpected message type \"{}\" found for actor \"{}\"",
+                                 msg_type, to);
+                    },
+                    _ => ()
                 }
             }
         }
@@ -207,7 +210,7 @@ impl ActorRegistry {
         for name in old_actors.into_iter() {
             self.drop_actor(name);
         }
-        Ok(())
+        Ok(MsgStatus::Processed)
     }
 
     pub fn drop_actor(&mut self, name: String) {

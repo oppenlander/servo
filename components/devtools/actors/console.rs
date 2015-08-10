@@ -13,7 +13,8 @@ use protocol::JsonPacketStream;
 use devtools_traits::EvaluateJSReply::{NullValue, VoidValue, NumberValue};
 use devtools_traits::EvaluateJSReply::{StringValue, BooleanValue, ActorValue};
 use devtools_traits::{CachedConsoleMessageTypes, DevtoolScriptControlMsg, PAGE_ERROR, CONSOLE_API};
-use devtools_traits::CachedConsoleMessage;
+use devtools_traits::{CachedConsoleMessage, MsgStatus};
+use devtools_traits::MsgStatus::{Processed, Ignored};
 use msg::constellation_msg::PipelineId;
 
 use std::collections::BTreeMap;
@@ -95,7 +96,7 @@ impl Actor for ConsoleActor {
                       _registry: &ActorRegistry,
                       msg_type: &str,
                       msg: &json::Object,
-                      stream: &mut TcpStream) -> Result<bool, ()> {
+                      stream: &mut TcpStream) -> Result<MsgStatus, ()> {
         Ok(match msg_type {
             "getCachedMessages" => {
                 let str_types = msg.get("messageTypes").unwrap().as_array().unwrap().into_iter().map(|json_type| {
@@ -123,7 +124,7 @@ impl Actor for ConsoleActor {
                     messages: messages,
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             "startListeners" => {
@@ -138,7 +139,7 @@ impl Actor for ConsoleActor {
                     }
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             "stopListeners" => {
@@ -154,7 +155,7 @@ impl Actor for ConsoleActor {
                                          .collect(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             //TODO: implement autocompletion like onAutocomplete in
@@ -166,7 +167,7 @@ impl Actor for ConsoleActor {
                     matchProp: "".to_string(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             "evaluateJS" => {
@@ -234,10 +235,10 @@ impl Actor for ConsoleActor {
                     helperResult: Json::Object(BTreeMap::new()),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
-            _ => false
+            _ => Ignored
         })
     }
 }

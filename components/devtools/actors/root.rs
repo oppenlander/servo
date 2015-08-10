@@ -10,6 +10,8 @@
 use actor::{Actor, ActorRegistry};
 use actors::tab::{TabActor, TabActorMsg};
 use protocol::JsonPacketStream;
+use devtools_traits::MsgStatus;
+use devtools_traits::MsgStatus::{Processed, Ignored};
 
 use rustc_serialize::json;
 use std::net::TcpStream;
@@ -55,7 +57,7 @@ impl Actor for RootActor {
                       registry: &ActorRegistry,
                       msg_type: &str,
                       _msg: &json::Object,
-                      stream: &mut TcpStream) -> Result<bool, ()> {
+                      stream: &mut TcpStream) -> Result<MsgStatus, ()> {
         Ok(match msg_type {
             "listAddons" => {
                 let actor = ErrorReply {
@@ -64,7 +66,7 @@ impl Actor for RootActor {
                     message: "This root actor has no browser addons.".to_string(),
                 };
                 stream.write_json_packet(&actor);
-                true
+                Processed
             }
 
             //https://wiki.mozilla.org/Remote_Debugging_Protocol#Listing_Browser_Tabs
@@ -77,10 +79,10 @@ impl Actor for RootActor {
                     }).collect()
                 };
                 stream.write_json_packet(&actor);
-                true
+                Processed
             }
 
-            _ => false
+            _ => Ignored
         })
     }
 }

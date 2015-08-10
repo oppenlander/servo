@@ -264,3 +264,9 @@ impl PreciseTime {
         Duration::nanoseconds((later.0 - self.0) as i64)
     }
 }
+
+/// Status of messages handled by Actors
+pub enum MsgStatus {
+    Processed,
+    Ignored,
+}

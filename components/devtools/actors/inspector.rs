@@ -5,9 +5,10 @@
 //! Liberally derived from the [Firefox JS implementation]
 //! (http://mxr.mozilla.org/mozilla-central/source/toolkit/devtools/server/actors/inspector.js).
 
-use devtools_traits::{DevtoolScriptControlMsg, NodeInfo};
+use devtools_traits::{DevtoolScriptControlMsg, NodeInfo, MsgStatus};
 use devtools_traits::DevtoolScriptControlMsg::{GetRootNode, GetDocumentElement, GetChildren};
 use devtools_traits::DevtoolScriptControlMsg::{GetLayout, ModifyAttribute};
+use devtools_traits::MsgStatus::{Processed, Ignored};
 
 use actor::{Actor, ActorRegistry};
 use protocol::JsonPacketStream;
@@ -69,14 +70,14 @@ impl Actor for HighlighterActor {
                       _registry: &ActorRegistry,
                       msg_type: &str,
                       _msg: &json::Object,
-                      stream: &mut TcpStream) -> Result<bool, ()> {
+                      stream: &mut TcpStream) -> Result<MsgStatus, ()> {
         Ok(match msg_type {
             "showBoxModel" => {
                 let msg = ShowBoxModelReply {
                     from: self.name(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             "hideBoxModel" => {
@@ -84,10 +85,10 @@ impl Actor for HighlighterActor {
                     from: self.name(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
-            _ => false,
+            _ => Ignored,
         })
     }
 }
@@ -106,7 +107,7 @@ impl Actor for NodeActor {
                       registry: &ActorRegistry,
                       msg_type: &str,
                       msg: &json::Object,
-                      stream: &mut TcpStream) -> Result<bool, ()> {
+                      stream: &mut TcpStream) -> Result<MsgStatus, ()> {
         Ok(match msg_type {
             "modifyAttributes" => {
                 let target = msg.get(&"to".to_string()).unwrap().as_string().unwrap();
@@ -123,10 +124,10 @@ impl Actor for NodeActor {
                     from: self.name(),
                 };
                 stream.write_json_packet(&reply);
-                true
+                Processed
             }
 
-            _ => false,
+            _ => Ignored,
         })
     }
 }
@@ -280,14 +281,14 @@ impl Actor for WalkerActor {
                       registry: &ActorRegistry,
                       msg_type: &str,
                       msg: &json::Object,
-                      stream: &mut TcpStream) -> Result<bool, ()> {
+                      stream: &mut TcpStream) -> Result<MsgStatus, ()> {
         Ok(match msg_type {
             "querySelector" => {
                 let msg = QuerySelectorReply {
                     from: self.name(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             "documentElement" => {
@@ -301,7 +302,7 @@ impl Actor for WalkerActor {
                     node: node,
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             "clearPseudoClassLocks" => {
@@ -309,7 +310,7 @@ impl Actor for WalkerActor {
                     from: self.name(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             "children" => {
@@ -330,10 +331,10 @@ impl Actor for WalkerActor {
                     from: self.name(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
-            _ => false,
+            _ => Ignored,
         })
     }
 }
@@ -426,7 +427,7 @@ impl Actor for PageStyleActor {
                       registry: &ActorRegistry,
                       msg_type: &str,
                       msg: &json::Object,
-                      stream: &mut TcpStream) -> Result<bool, ()> {
+                      stream: &mut TcpStream) -> Result<MsgStatus, ()> {
         Ok(match msg_type {
             "getApplied" => {
                 //TODO: query script for relevant applied styles to node (msg.node)
@@ -437,7 +438,7 @@ impl Actor for PageStyleActor {
                     from: self.name(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             "getComputed" => {
@@ -447,7 +448,7 @@ impl Actor for PageStyleActor {
                     from: self.name(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             //TODO: query script for box layout properties of node (msg.node)
@@ -484,10 +485,10 @@ impl Actor for PageStyleActor {
                     from: self.name(),
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
-            _ => false,
+            _ => Ignored,
         })
     }
 }
@@ -501,7 +502,7 @@ impl Actor for InspectorActor {
                       registry: &ActorRegistry,
                       msg_type: &str,
                       _msg: &json::Object,
-                      stream: &mut TcpStream) -> Result<bool, ()> {
+                      stream: &mut TcpStream) -> Result<MsgStatus, ()> {
         Ok(match msg_type {
             "getWalker" => {
                 if self.walker.borrow().is_none() {
@@ -529,7 +530,7 @@ impl Actor for InspectorActor {
                     }
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             "getPageStyle" => {
@@ -551,7 +552,7 @@ impl Actor for InspectorActor {
                     },
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
             //TODO: this is an old message; try adding highlightable to the root traits instead
@@ -574,10 +575,10 @@ impl Actor for InspectorActor {
                     },
                 };
                 stream.write_json_packet(&msg);
-                true
+                Processed
             }
 
-            _ => false,
+            _ => Ignored,
         })
     }
 }
